@@ -1,10 +1,12 @@
-package edu.mum.cs544;
+package edu.mum.cs544.bank;
 
+import edu.mum.cs544.bank.logging.ILogger;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
 
@@ -13,7 +15,14 @@ import java.util.Date;
 @Aspect
 @Component
 public class LogAspect {
-    @Around("target(edu.mum.cs544.ICustomerDAO)")
+    @Autowired
+    private ILogger logger;
+
+    @Before("execution(* edu.mum.cs544.bank.dao.*.*(..))")
+    public void logDAO(JoinPoint joinpoint) {
+        logger.log(new Date() + " DAO method= " +  joinpoint.getSignature().getName());
+    }
+    @Around("target(edu.mum.cs544.bank.service.IAccountService)")
     public Object invoke(ProceedingJoinPoint call ) throws Throwable {
         StopWatch sw = new StopWatch();
         sw.start(call.getSignature().getName());
@@ -24,13 +33,8 @@ public class LogAspect {
         System.out.println("Time to execute save = "+ totaltime);
         return retVal;
     }
-
-    //@After("target(edu.mum.cs544.IEmailSender) && args(String,String)")
-    @After("execution(* edu.mum.cs544.EmailSender.sendEmail(..)) && args(String,String)")
-    public void logAfter(JoinPoint joinpoint) {
-
-        System.out.println(new Date() + " method= " +  joinpoint.getSignature().getName()
-                                    +"address = " + joinpoint.getArgs()[0] +" message= " + joinpoint.getArgs()[1] +"\n"
-                                    + "outgoing email server=  " + joinpoint.getTarget());
+    @Before("target(edu.mum.cs544.bank.jms.IJMSSender)")
+    public void logJMS(JoinPoint joinpoint) {
+        logger.log(new Date() + " JSM method= " +  joinpoint.getSignature().getName());
     }
 }
